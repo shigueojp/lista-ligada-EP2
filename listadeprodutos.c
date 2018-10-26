@@ -81,16 +81,53 @@ int consultarValorUnitario(PLISTA l, int id){
   return 0;
 }
 
-
-
-
-
-bool inserirNovoProduto(PLISTA l, int id, int tipo, int quantidade, int valor){
-
-  /* COMPLETAR */
+bool existeIdProduto(PLISTA l, int id){
+  int x;
+  PONT atual;
+  for (x=0;x<NUMTIPOS;x++){
+    atual = l->LISTADELISTAS[x]->proxProd;
+    while (atual) {
+      if (atual->id == id) return true;
+      atual = atual->proxProd;
+    }
+  }
 
   return false;
 }
+
+PONT buscaSeqExc(PLISTA l, int tipo, int id, PONT* ant){
+  *ant = NULL;
+  PONT atual = l->LISTADELISTAS[tipo];
+  while (atual != NULL && atual->id<id){
+    *ant = atual;
+    atual = atual->proxProd;
+  }
+  if ((atual != NULL) && (atual->id == id)) return atual;
+  return NULL;
+}
+
+bool inserirNovoProduto(PLISTA l, int id, int tipo, int quantidade, int valor){
+  if (id <= 0 || quantidade <= 0 || valor <= 0 || tipo > NUMTIPOS-1 || tipo <= 0) return false;
+  if (existeIdProduto(l, id)) return false;
+  PONT ant;
+  buscaSeqExc(l, tipo, id, &ant);
+
+  int x = tipo;
+  PONT novo = (PONT) malloc(sizeof(REGISTRO));
+  PONT atual = l->LISTADELISTAS[x]->proxProd;
+  novo->id = id;
+  novo->quantidade = quantidade;
+  novo->valorUnitario = valor;
+  if(atual == NULL){
+    l->LISTADELISTAS[x]->proxProd = novo;
+  } else {
+    novo->proxProd = ant->proxProd;
+    ant->proxProd = novo;
+  }
+
+  return true;
+}
+
 
 
 
