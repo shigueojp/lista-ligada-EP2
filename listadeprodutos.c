@@ -95,10 +95,24 @@ bool existeIdProduto(PLISTA l, int id){
   return false;
 }
 
-PONT buscaSeqExc(PLISTA l, int tipo, int id, PONT* ant){
+int pegaIndexListaProduto(PLISTA l, int id){
+  int x;
+  PONT atual;
+  for (x=0;x<NUMTIPOS;x++){
+    atual = l->LISTADELISTAS[x]->proxProd;
+    while (atual) {
+      if (atual->id == id) return x;
+      atual = atual->proxProd;
+    }
+  }
+
+  return -1;
+}
+
+PONT buscaSeqExc(PLISTA l, int tipo, int id, int valorTotal, PONT* ant){
   *ant = NULL;
-  PONT atual = l->LISTADELISTAS[tipo];
-  while (atual != NULL && atual->id<id){
+  PONT atual = l->LISTADELISTAS[tipo]->proxProd; //PRIMEIRA VEZ SEMPRE É NULL
+  while (atual != NULL && (atual->quantidade*atual->valorUnitario < valorTotal)) {
     *ant = atual;
     atual = atual->proxProd;
   }
@@ -106,20 +120,35 @@ PONT buscaSeqExc(PLISTA l, int tipo, int id, PONT* ant){
   return NULL;
 }
 
-bool inserirNovoProduto(PLISTA l, int id, int tipo, int quantidade, int valor){
-  if (id <= 0 || quantidade <= 0 || valor <= 0 || tipo > NUMTIPOS-1 || tipo <= 0) return false;
-  if (existeIdProduto(l, id)) return false;
-  PONT ant;
-  buscaSeqExc(l, tipo, id, &ant);
+PONT buscaSeqExc2(PLISTA l, int tipo, int id, PONT* ant){
+  *ant = NULL;
+  PONT atual = l->LISTADELISTAS[tipo]->proxProd; 
+  while (atual != NULL && atual->id != id){
+    *ant = atual;
+    atual = atual->proxProd;
+  }
+  if ((atual != NULL) && (atual->id == id)) return atual;
+  return NULL;
+}
 
-  int x = tipo;
+bool inserirNovoProduto(PLISTA l, int id, int tipo, int quantidade, int valor)
+{
+  if (id <= 0 || quantidade <= 0 || valor <= 0 || tipo > NUMTIPOS-1 || tipo <= 0 || existeIdProduto(l, id)) return false;
+ 
+  PONT atual = l->LISTADELISTAS[tipo]->proxProd;
+  PONT ant, i;
+ 
+  i = buscaSeqExc(l, tipo, id, quantidade*valor, &ant);
+  if (i != NULL)	return false;
+
   PONT novo = (PONT) malloc(sizeof(REGISTRO));
-  PONT atual = l->LISTADELISTAS[x]->proxProd;
   novo->id = id;
   novo->quantidade = quantidade;
   novo->valorUnitario = valor;
-  if(atual == NULL){
-    l->LISTADELISTAS[x]->proxProd = novo;
+
+  if (ant == NULL) {
+    l->LISTADELISTAS[tipo]->proxProd = novo;
+    novo->proxProd = atual;
   } else {
     novo->proxProd = ant->proxProd;
     ant->proxProd = novo;
@@ -128,20 +157,37 @@ bool inserirNovoProduto(PLISTA l, int id, int tipo, int quantidade, int valor){
   return true;
 }
 
+bool removerItensDeUmProduto(PLISTA l, int id, int quantidade)
+{
+  if (quantidade <= 0 || id <= 0 || !existeIdProduto(l, id)) return false;
 
+  int tipo = pegaIndexListaProduto(l, id);
+  PONT ant, i;
+  printf("%d", tipo);
+  i = buscaSeqExc2(l, tipo, id, &ant);
+  if (i == NULL)	return false; //if i==null nao existe o elemento na lista
+  if (i->quantidade < quantidade)	return false;
+  if (ant == NULL) l->LISTADELISTAS[tipo]->proxProd = i->proxProd;
+  else ant->proxProd = i->proxProd;
+  inserirNovoProduto(l, id, tipo, i->quantidade-quantidade, i->valorUnitario);
+  free(i);
 
-
-bool removerItensDeUmProduto(PLISTA l, int id, int quantidade){
-
-  /* COMPLETAR */
-
-  return false;
+  return true;
 }
 
 
-bool atualizarValorDoProduto(PLISTA l, int id, int valor){
+bool atualizarValorDoProduto(PLISTA l, int id, int valor)
+{
+  if (valor <= 0 || id <= 0 || !existeIdProduto(l, id)) return false;
 
-  /* COMPLETAR */
+  int tipo = pegaIndexListaProduto(l, id);
+  PONT ant, i;
+  i = buscaSeqExc2(l, tipo, id, &ant);
+  if (i == NULL)	return false; //if i==null nao existe o elemento na lista
+  if (ant == NULL) l->LISTADELISTAS[tipo]->proxProd = i->proxProd;
+  else ant->proxProd = i->proxProd;
+  inserirNovoProduto(l, id, tipo, i->quantidade, valor);
+  free(i);
 
-  return false;
+  return true;
 }
